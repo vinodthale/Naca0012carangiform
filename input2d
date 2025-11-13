@@ -298,9 +298,10 @@ Main {
 CartesianGeometry {
    // domain_boxes use cell indices: here coarse grid extents in x and y
    domain_boxes = [ (0,0) , (2*N - 1 , N - 1) ] // (2*N - 1, N - 1) are the upper bounds for the grid in x and y; N is the number of coarse grid cells in x
-    // NEW domain (larger to avoid boundary effects):
-    x_lo = -10.0, -3.0           // Extend upstream and sides
-    x_up =  4.0,  5.0           // Extend downstream and sides
+    // Domain: 16L × 8L maintains 2:1 aspect ratio matching grid
+    // Fish (length L=1) centered near origin with room to swim
+    x_lo = -10.0, -4.0           // 10L upstream, 4L below
+    x_up =  6.0,  4.0            // 6L downstream, 4L above (2:1 ratio: 16×8)
    // periodicity flags for each dimension (1 -> periodic). Here both dimensions are periodic.
    periodic_dimension = 0, 0
 }
