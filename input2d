@@ -169,7 +169,7 @@ naca0012carangiform {
      //    - Wave amplitude increases gradually from head to tail
      //    - Large amplitude undulations along entire body
      //    - Used by: eels, lampreys, snakes
-     //    - Amplitude envelope: A(x/L) = c₀ + c₁*(x/L) + c₂*(x/L)²
+     //    - Amplitude envelope: A(x/L) = 0.0367 + 0.0323*(x/L) + 0.0310*(x/L)²
      //
      // 2. CARANGIFORM (Fish-like):
      //    - Wave amplitude concentrated in posterior half
@@ -208,13 +208,14 @@ naca0012carangiform {
      //   1. Comment out the CARANGIFORM equations above
      //   2. Uncomment the ANGUILLIFORM equations below
      //
-     // Amplitude envelope: A(x/L) = 0.01 + 0.02*(x/L) + 0.12*(x/L)²
+     // Amplitude envelope: A(x/L) = 0.0367 + 0.0323*(x/L) + 0.0310*(x/L)²
      // Gradual amplitude increase from head to tail for eel-like motion
+     // Reference: [7,8,30]
      //
-     // body_shape_equation = "(0.01 + 0.02*X_0 + 0.12*X_0^2) * cos(2*PI*X_0 - 2*PI*T)"
+     // body_shape_equation = "(0.0367 + 0.0323*X_0 + 0.0310*X_0^2) * cos(2*PI*X_0 - 2*PI*T)"
      //
-     // deformation_velocity_function_0  = "((0.01 + 0.02*X_0 + 0.12*X_0^2) * 2*PI * sin(2*PI*X_0 - 2*PI*T)) * N_0"
-     // deformation_velocity_function_1  = "((0.01 + 0.02*X_0 + 0.12*X_0^2) * 2*PI * sin(2*PI*X_0 - 2*PI*T)) * N_1"
+     // deformation_velocity_function_0  = "((0.0367 + 0.0323*X_0 + 0.0310*X_0^2) * 2*PI * sin(2*PI*X_0 - 2*PI*T)) * N_0"
+     // deformation_velocity_function_1  = "((0.0367 + 0.0323*X_0 + 0.0310*X_0^2) * 2*PI * sin(2*PI*X_0 - 2*PI*T)) * N_1"
      // ===================================================================
      // whether the body executes additional maneuvering motion
      body_is_maneuvering                 = FALSE       //default false. If FALSE then nothing below has any effect.
