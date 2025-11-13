@@ -37,14 +37,35 @@ namespace IBAMR
 {
 /*!
  * \brief IBNACA0012Kinematics is a concrete class which calculates the deformation velocity and updated shape
- * for NACA0012 airfoil with carangiform swimming motion. It also provides routines for maneuvering and food tracking cases.
- * 
- * Kinematics based on:
- *  Khalid et al. A bio-inspired study on tuna-mimetic soft robot with a compliant caudal fin. 
- *  J Fluids Structures, 66:19-35 (2016).
+ * for a NACA0012 airfoil representing a swimmer's body.
  *
- * Amplitude envelope: A(x/L) = 0.02 - 0.0825(x/L) + 0.1625(x/L)^2
- * Traveling wave: y(x,t) = A(x/L) * cos[2π(x/L - ft)]
+ * GEOMETRY:
+ * The NACA0012 airfoil profile represents the swimmer's body cross-section, where the chord
+ * represents the spine at static equilibrium. The foil undergoes undulatory motion via
+ * traveling waves.
+ *
+ * SWIMMING MODES:
+ * Two swimming kinematics modes are supported (selected via amplitude envelope function):
+ *
+ * 1. ANGUILLIFORM (Eel-like):
+ *    - Wave amplitude increases gradually from head to tail
+ *    - Large undulations along entire body
+ *    - Wavelength λ ≥ L (body length)
+ *    - Example: A(x/L) = c₀ + c₁*(x/L) + c₂*(x/L)² with increasing coefficients
+ *
+ * 2. CARANGIFORM (Fish-like, default):
+ *    - Wave amplitude concentrated in posterior half
+ *    - Rigid anterior, flexible posterior
+ *    - Wavelength λ ≈ L
+ *    - Example (Khalid et al. 2016): A(x/L) = 0.02 - 0.0825*(x/L) + 0.1625*(x/L)²
+ *
+ * KINEMATICS:
+ *    Centerline:  y(x,t) = A(x/L) * cos[2π(x/L - ft)]
+ *    Velocity:    ∂y/∂t  = A(x/L) * 2πf * sin[2π(x/L - ft)]
+ *
+ * REFERENCES:
+ * - Khalid et al. "A bio-inspired study on tuna-mimetic soft robot with a compliant caudal fin."
+ *   J Fluids Structures, 66:19-35 (2016).
  */
 
 class IBNACA0012Kinematics : public ConstraintIBKinematics
