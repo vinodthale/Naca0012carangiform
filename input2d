@@ -1,3 +1,22 @@
+// ========================================================================
+// NACA0012 FOIL SWIMMING SIMULATION - Input Configuration
+// ========================================================================
+// Based on: IBAMR eel2d example (examples/ConstraintIB/eel2d/input2d)
+// Reference: https://github.com/IBAMR/IBAMR/blob/master/examples/ConstraintIB/eel2d/input2d
+//
+// DESCRIPTION:
+// This simulation models undulatory swimming using a NACA0012 airfoil profile,
+// where the chord represents the spine of a swimmer at static equilibrium.
+// The foil undergoes traveling wave deformations to simulate swimming motion.
+//
+// TWO SWIMMING MODES SUPPORTED:
+// 1. ANGUILLIFORM (Eel-like): Gradual amplitude increase from head to tail
+// 2. CARANGIFORM (Fish-like): Amplitude concentrated in posterior half
+//
+// The swimming mode is selected via the amplitude envelope function A(x/L)
+// configured in the ConstraintIBKinematics section below.
+// ========================================================================
+
 // physical parameters
 Re = 5609.0          // the Reynolds number
 // viscosity computed from Re (MU = U*L/Re; nondimensional choices embedded in example)
@@ -141,21 +160,62 @@ naca0012carangiform {
      initial_angle_body_axis_0        = 0.0                     // initial body orientation angle (radians)
 
      // ===================================================================
-     // CARANGIFORM KINEMATICS (Khalid et al., 2016)
+     // NACA0012 FOIL SWIMMING KINEMATICS
      // ===================================================================
-     // Amplitude envelope: A(x/L) = 0.02 - 0.0825(x/L) + 0.1625(x/L)^2
-     // Centerline position: y(x,t) = A(x/L) * cos[2π(x/L - ft)]
-     // where: X_0 = x/L (material coordinate, 0 to 1)
-     //        T = t (time)
-     //        f = 1 Hz (frequency)
-     //        λ = L = 1 (wavelength equals body length)
+     // The NACA0012 chord represents the spine of the swimmer at static equilibrium.
+     // Two swimming modes are supported - select ONE by uncommenting the appropriate block:
+     //
+     // 1. ANGUILLIFORM (Eel-like):
+     //    - Wave amplitude increases gradually from head to tail
+     //    - Large amplitude undulations along entire body
+     //    - Used by: eels, lampreys, snakes
+     //    - Amplitude envelope: A(x/L) = c₀ + c₁*(x/L) + c₂*(x/L)²
+     //
+     // 2. CARANGIFORM (Fish-like):
+     //    - Wave amplitude concentrated in posterior half
+     //    - Anterior body remains relatively rigid
+     //    - Used by: tuna, mackerel, most fast-swimming fish
+     //    - Amplitude envelope (Khalid et al. 2016):
+     //      A(x/L) = 0.02 - 0.0825*(x/L) + 0.1625*(x/L)²
+     //
+     // General form:
+     // Centerline displacement: y(x,t) = A(x/L) * cos[2π(x/λ - ft)]
+     // Deformation velocity:    ∂y/∂t = A(x/L) * 2πf * sin[2π(x/λ - ft)]
+     //
+     // Variables in equations:
+     //   X_0 = x/L (normalized chordwise position, 0 to 1)
+     //   T = t (time)
+     //   f = 1 Hz (swimming frequency)
+     //   λ = L = 1 (wavelength equals body length)
+     //   N_0, N_1 = normal vector components (automatically computed)
      // ===================================================================
+
+     // ===================================================================
+     // OPTION 1: CARANGIFORM MODE (Currently Active)
+     // ===================================================================
+     // Amplitude envelope: A(x/L) = 0.02 - 0.0825(x/L) + 0.1625(x/L)²
+     // Small amplitude at head, increasing rapidly toward tail
      body_shape_equation = "(0.02 - 0.0825*X_0 + 0.1625*X_0^2) * cos(2*PI*X_0 - 2*PI*T)"
 
-     // Deformation velocity: ∂y/∂t = A(x/L) * 2πf * sin[2π(x/L - ft)]
-     // Projected onto local normal direction (N_0, N_1)
+     // Deformation velocity projected onto local normal direction
      deformation_velocity_function_0  = "((0.02 - 0.0825*X_0 + 0.1625*X_0^2) * 2*PI * sin(2*PI*X_0 - 2*PI*T)) * N_0"
      deformation_velocity_function_1  = "((0.02 - 0.0825*X_0 + 0.1625*X_0^2) * 2*PI * sin(2*PI*X_0 - 2*PI*T)) * N_1"
+
+     // ===================================================================
+     // OPTION 2: ANGUILLIFORM MODE (Commented Out)
+     // ===================================================================
+     // To activate anguilliform mode:
+     //   1. Comment out the CARANGIFORM equations above
+     //   2. Uncomment the ANGUILLIFORM equations below
+     //
+     // Amplitude envelope: A(x/L) = 0.01 + 0.02*(x/L) + 0.12*(x/L)²
+     // Gradual amplitude increase from head to tail for eel-like motion
+     //
+     // body_shape_equation = "(0.01 + 0.02*X_0 + 0.12*X_0^2) * cos(2*PI*X_0 - 2*PI*T)"
+     //
+     // deformation_velocity_function_0  = "((0.01 + 0.02*X_0 + 0.12*X_0^2) * 2*PI * sin(2*PI*X_0 - 2*PI*T)) * N_0"
+     // deformation_velocity_function_1  = "((0.01 + 0.02*X_0 + 0.12*X_0^2) * 2*PI * sin(2*PI*X_0 - 2*PI*T)) * N_1"
+     // ===================================================================
      // whether the body executes additional maneuvering motion
      body_is_maneuvering                 = FALSE       //default false. If FALSE then nothing below has any effect.
      // equation defining the maneuver axis (used if body_is_maneuvering is TRUE)
