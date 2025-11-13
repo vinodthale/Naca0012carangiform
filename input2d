@@ -46,10 +46,10 @@ CFL_MAX              = 0.3                        // maximum CFL number for dt c
 DT_MAX               = 0.0001                      // maximum timestep size
 VORTICITY_TAGGING    = TRUE                       // whether to tag cells for refinement based on vorticity thresholds
 TAG_BUFFER           = 2                          // size of tag buffer used by grid generation algorithm
-REGRID_CFL_INTERVAL  = -1                        // regrid whenever any material point could have moved 0.5 meshwidths since previous regrid
+REGRID_CFL_INTERVAL  = 0.5                        // regrid whenever any material point could have moved 0.5 meshwidths since previous regrid
 OUTPUT_U             = TRUE                       // write velocity output
 OUTPUT_P             = TRUE                       // write pressure output
-OUTPUT_F             = TRUE                      // write force output
+OUTPUT_F             = FALSE                      // write force output
 OUTPUT_OMEGA         = TRUE                       // write vorticity output
 OUTPUT_DIV_U         = TRUE                       // write divergence of velocity output
 ENABLE_LOGGING       = TRUE                       // enable detailed logging
@@ -129,14 +129,14 @@ ConstraintIBMethod {
    output_interval       = 1                  // how often (in steps) to write the outputs
    output_drag           = TRUE               // write drag force
    output_torque         = TRUE               // write torque
-   output_power          = TRUE              // write power (not enabled)
+   output_power          = FALSE              // write power (disabled to match eel2d)
    output_rig_transvel   = TRUE               // output rigid-body translational velocity
    output_rig_rotvel     = TRUE               // output rigid-body rotational velocity
    output_com_coords     = TRUE               // output center-of-mass coordinates
-   output_moment_inertia = TRUE              // output moment of inertia (not enabled)
-   output_eulerian_mom   = TRUE               // output Eulerian momentum (not enabled)
-   output_dirname        = "./NACA0012CarangiformData"     // Output directory
-   base_filename         = "naca0012carangiform"           // Base filename
+   output_moment_inertia = FALSE              // output moment of inertia (disabled to match eel2d)
+   output_eulerian_mom   = FALSE              // output Eulerian momentum (disabled to match eel2d)
+   output_dirname        = "./NACA0012Str"    // Output directory
+   base_filename         = "NACA0012"         // Base filename
   }
 
 }
@@ -332,40 +332,41 @@ INSStaggeredHierarchyIntegrator {
 Main {
 
 // log file parameters
-   log_file_name               = "IB2dnaca0012carangiform.log"
+   log_file_name               = "IB2dNACA0012Str.log"
    log_all_nodes               = FALSE
 
 // visualization dump parameters
    viz_writer                  = "VisIt","Silo"
    viz_dump_interval           = 40                     // zero to turn off
-   viz_dump_dirname            = "viz_naca0012carangiform"
+   viz_dump_dirname            = "viz_naca0012_Str"
    visit_number_procs_per_file = 1
 // restart dump parameters
    restart_dump_interval       = 150                     // zero to turn off
-   restart_dump_dirname        = "restart_naca0012carangiform"
+   restart_dump_dirname        = "restart_IB2dStrDiv"
 // hierarchy data dump parameters
    data_dump_interval          = 0                     // zero to turn off
-   data_dump_dirname           = "hier_data_naca0012carangiform"
+   data_dump_dirname           = "hier_data_IB2dStr"
 // timer dump parameters
    timer_dump_interval         = 100                     // zero to turn off
 }
 // ========================================================================
-// COMPUTATIONAL DOMAIN
+// COMPUTATIONAL DOMAIN (Matched to eel2d reference)
 // ========================================================================
-// Domain: 16L × 8L (fish length L=1)
-// Fish centered near origin, spans x ∈ [-0.5, 0.5], y ∈ [-0.06, 0.06]
-// Provides ~10L upstream, ~6L downstream, ±4L lateral clearance
+// Domain: 8L × 4L (swimmer length L=1)
+// NACA0012 foil centered near origin, spans x ∈ [-0.5, 0.5], y ∈ [-0.06, 0.06]
+// Provides ~6.5L upstream, ~1.5L downstream, ±1.5L lateral clearance
+// Both dimensions are PERIODIC to match eel2d reference
 // ========================================================================
 // Cartesian geometry and domain specification
 CartesianGeometry {
    // domain_boxes use cell indices: here coarse grid extents in x and y
    domain_boxes = [ (0,0) , (2*N - 1 , N - 1) ] // (2*N - 1, N - 1) are the upper bounds for the grid in x and y; N is the number of coarse grid cells in x
-    // Domain: 16L × 8L maintains 2:1 aspect ratio matching grid
-    // Fish (length L=1) centered near origin with room to swim
-    x_lo = -10.0, -4.0           // 10L upstream, 4L below
-    x_up =  6.0,  4.0            // 6L downstream, 4L above (2:1 ratio: 16×8)
-   // periodicity flags for each dimension (1 -> periodic). Here both dimensions are periodic.
-   periodic_dimension = 0, 0
+   // Domain: 8L × 4L maintains 2:1 aspect ratio matching grid (same as eel2d reference)
+   // NACA0012 foil (length L=1) centered near origin with room to swim
+   x_lo = -6.52, -1.52           // lower end of computational domain
+   x_up =  1.48,  2.48           // upper end of computational domain
+   // periodicity flags for each dimension (1 -> periodic). Both dimensions are periodic (matches eel2d).
+   periodic_dimension = 1, 1
 }
 
 // AMR grid generation details
@@ -414,8 +415,8 @@ LoadBalancer {
 // Timer printing options to help profile IBAMR/IBTK routines
 TimerManager{
    print_exclusive = TRUE
-   print_total = TRUE
+   print_total = FALSE
    print_threshold = 0
    print_percentage = TRUE
-   timer_list = "IBAMR::*::*", "IBTK::*::*" , "*::*::*", "*::ConstraintIBMethod::*" 
+   timer_list = "IBAMR::*::*", "IBTK::*::*" , "*::*::*", "*::ConstraintIBMethod::*"
 }
