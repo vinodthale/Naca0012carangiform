@@ -11,6 +11,38 @@
 //
 // ---------------------------------------------------------------------
 
+/////////////////////////////// SIMULATION OVERVIEW ////////////////////////////////
+//
+// This example demonstrates fluid-structure interaction simulation of fish-like
+// swimming using the Constraint IB Method.
+//
+// PHYSICAL MODEL:
+// We employ a NACA0012 airfoil to model the swimmers' bodies, where the chord
+// represents the spine of a swimmer at the time of their static equilibrium.
+// The NACA0012 foil is a symmetric airfoil section with maximum thickness of
+// 12% of the chord length.
+//
+// KINEMATIC MODES:
+// Two types of wavy kinematic modes are considered in this simulation:
+//
+// 1. ANGUILLIFORM MODE:
+//    - Characterized by body undulations along the entire length of the swimmer
+//    - Large amplitude undulations that propagate from head to tail
+//    - Typical of eel-like swimmers
+//    - Wave amplitude envelope increases from head to tail
+//
+// 2. CARANGIFORM MODE:
+//    - Undulations concentrated in the posterior half of the body
+//    - Anterior portion remains relatively rigid
+//    - More efficient for sustained cruising
+//    - Typical of many fish species (e.g., trout, mackerel)
+//
+// The prescribed kinematics are implemented through the IBNACA0012Kinematics
+// class, which enforces time-dependent deformations of the NACA0012 foil based
+// on the selected swimming mode.
+//
+////////////////////////////////////////////////////////////////////////////////////
+
 // Config files
 #include <SAMRAI_config.h>
 
@@ -55,13 +87,18 @@ void output_data(Pointer<PatchHierarchy<NDIM> > patch_hierarchy,
                  const string& data_dump_dirname);
 
 /*******************************************************************************
- * For each run, the input filename and restart information (if needed) must   *
- * be given on the command line.  For non-restarted case, command line is:     *
+ * NACA0012 Swimming Simulation - Anguilliform and Carangiform Modes          *
  *                                                                             *
+ * This simulation models fish-like swimming using a NACA0012 foil where the  *
+ * chord represents the swimmer's spine at static equilibrium. The simulation *
+ * supports both anguilliform (eel-like) and carangiform (fish-like) swimming *
+ * modes through prescribed kinematics.                                        *
+ *                                                                             *
+ * USAGE:                                                                      *
+ * For non-restarted case:                                                     *
  *    executable <input file name>                                             *
  *                                                                             *
- * For restarted run, command line is:                                         *
- *                                                                             *
+ * For restarted run:                                                          *
  *    executable <input file name> <restart directory> <restart number>        *
  *                                                                             *
  *******************************************************************************/
@@ -201,10 +238,14 @@ main(int argc, char* argv[])
         time_integrator->initializePatchHierarchy(patch_hierarchy, gridding_algorithm);
 
         // Create ConstraintIBKinematics objects
+        // The NACA0012 foil chord represents the swimmer's spine at static equilibrium.
+        // The kinematics class prescribes time-dependent deformations based on the
+        // selected swimming mode (anguilliform or carangiform).
         vector<Pointer<ConstraintIBKinematics> > ibkinematics_ops_vec;
         Pointer<ConstraintIBKinematics> ib_kinematics_op;
-        
-        // struct_0 - NACA0012 Carangiform fish (CORRECTED!)
+
+        // struct_0 - NACA0012 swimmer with prescribed kinematics
+        // The swimming mode (anguilliform/carangiform) is specified in the input database
         ib_kinematics_op =
             new IBNACA0012Kinematics("naca0012carangiform",
                                      app_initializer->getComponentDatabase("ConstraintIBKinematics")->getDatabase("naca0012carangiform"),
@@ -217,6 +258,8 @@ main(int argc, char* argv[])
         ib_method_ops->initializeHierarchyOperatorsandData();
 
         // Create hydrodynamic force evaluator object.
+        // This evaluates thrust, drag, and torque on the swimming NACA0012 foil
+        // as it deforms according to the prescribed kinematics.
         double rho_fluid = input_db->getDouble("RHO");
         double mu_fluid = input_db->getDouble("MU");
         double start_time = time_integrator->getIntegratorTime();
@@ -299,11 +342,13 @@ main(int argc, char* argv[])
             // Regrid the hierarchy if necessary.
             if (time_integrator->atRegridPoint()) time_integrator->regridHierarchy();
 
-            // Set the box velocity to nonzero only if the fish has moved sufficiently far.
+            // Track the swimmer's center of mass velocity to adjust the computational domain.
+            // The NACA0012 foil propels itself through the fluid via its prescribed kinematics,
+            // and we move the control volume to keep the swimmer centered in the domain.
             IBTK::Vector3d box_vel;
             box_vel.setZero();
 
-            // Velocity due to free-swimming
+            // Velocity due to free-swimming (propulsion from body undulations)
             std::vector<std::vector<double> > COM_vel = ib_method_ops->getCurrentCOMVelocity();
             for (int d = 0; d < NDIM; ++d) box_vel(d) = COM_vel[0][d];
 
