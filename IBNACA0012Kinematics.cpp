@@ -152,6 +152,15 @@ IBNACA0012Kinematics::IBNACA0012Kinematics(const std::string& object_name,
         (*cit)->DefineConst("Pi", pi);
         (*cit)->DefineConst("PI", pi);
 
+        // NACA0012 carangiform swimming parameters
+        (*cit)->DefineConst("a0", d_a0);
+        (*cit)->DefineConst("a1", d_a1);
+        (*cit)->DefineConst("a2", d_a2);
+        (*cit)->DefineConst("wavelength", d_wavelength);
+        (*cit)->DefineConst("lambda", d_wavelength);
+        (*cit)->DefineConst("frequency", d_frequency);
+        (*cit)->DefineConst("freq", d_frequency);
+
         // Variables
         (*cit)->DefineVar("T", &d_parser_time);
         (*cit)->DefineVar("t", &d_parser_time);
