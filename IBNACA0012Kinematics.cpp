@@ -1,6 +1,6 @@
 // ---------------------------------------------------------------------
 //
-// Copyright (c) 2014 - 2022 by the IBAMR developers
+// Copyright (c) 2014 - 2023 by the IBAMR developers
 // All rights reserved.
 //
 // This file is part of IBAMR.
@@ -11,6 +11,47 @@
 //
 // ---------------------------------------------------------------------
 
+/////////////////////////////// OVERVIEW //////////////////////////////////////
+//
+// NACA0012 Foil Kinematics for Swimmer Modeling
+//
+// This class models undulatory swimming by using a NACA0012 airfoil profile,
+// where the chord represents the spine of a swimmer at static equilibrium.
+// The foil undergoes traveling wave deformations to simulate swimming motion.
+//
+// TWO SWIMMING MODES SUPPORTED:
+//
+// 1. ANGUILLIFORM (Eel-like):
+//    - Wave amplitude increases gradually from head to tail
+//    - Large amplitude undulations along entire body length
+//    - Wavelength typically equals or exceeds body length (λ ≥ L)
+//    - Example amplitude envelope: A(x/L) = c₀ + c₁*(x/L) + c₂*(x/L)²
+//      where coefficients increase posteriorly
+//    - Used by: eels, lampreys, snakes
+//
+// 2. CARANGIFORM (Fish-like):
+//    - Wave amplitude concentrated in posterior half of body
+//    - Anterior body remains relatively rigid
+//    - Wavelength approximately equals body length (λ ≈ L)
+//    - Example amplitude envelope (Khalid et al. 2016):
+//      A(x/L) = 0.02 - 0.0825*(x/L) + 0.1625*(x/L)²
+//      This gives small amplitude near head, increasing rapidly toward tail
+//    - Used by: tuna, mackerel, most fast-swimming fish
+//
+// KINEMATICS FORMULATION:
+//    Centerline displacement: y(x,t) = A(x/L) * cos(2π(x/λ - ft))
+//    Deformation velocity:    ∂y/∂t = A(x/L) * 2πf * sin(2π(x/λ - ft))
+//
+// where: x   = chordwise position along spine
+//        L   = body length (chord length)
+//        λ   = wavelength
+//        f   = swimming frequency (Hz)
+//        t   = time
+//        A(x/L) = amplitude envelope function
+//
+// The swimming mode is selected by choosing the appropriate amplitude
+// envelope function A(x/L) in the input file.
+//
 //////////////////////////// INCLUDES /////////////////////////////////////////
 #include "ibtk/IBTK_MPI.h"
 
@@ -40,15 +81,54 @@ sign(const double X)
 static const double PII = 3.1415926535897932384626433832795;
 static const double __INFINITY = 1e9;
 
-// Set NACA0012 Fish Related Parameters.
-static const double LENGTH_FISH = 1.0;
-static const double WIDTH_HEAD = 0.04 * LENGTH_FISH;  // Maximum thickness (scaled NACA0012)
-static const double LENGTH_HEAD = 0.04;
+// NACA0012 Foil Parameters for Swimmer Modeling
+// The chord represents the spine of the swimmer at static equilibrium
+static const double CHORD_LENGTH = 1.0;              // Chord length (body length)
+static const double MAX_THICKNESS = 0.12;            // NACA0012: 12% thickness-to-chord ratio
 
-// prey capturing parameters (kept from eel for maneuvering capability).
+// NACA 4-digit airfoil thickness distribution coefficients
+// y_t/c = (t/c) * [a0*sqrt(x/c) + a1*(x/c) + a2*(x/c)^2 + a3*(x/c)^3 + a4*(x/c)^4]
+static const double NACA_A0 =  0.2969;
+static const double NACA_A1 = -0.1260;
+static const double NACA_A2 = -0.3516;
+static const double NACA_A3 =  0.2843;
+static const double NACA_A4 = -0.1015;  // Closed trailing edge (original: -0.1036 for open TE)
+
+// Maneuvering parameters (for food tracking/turning behavior)
 static const double CUT_OFF_ANGLE = PII / 4;
 static const double CUT_OFF_RADIUS = 0.7;
 static const double LOWER_CUT_OFF_ANGLE = 7 * PII / 180;
+
+/*!
+ * \brief Calculate NACA0012 half-thickness at given chordwise position
+ *
+ * For NACA 4-digit series: y_t = (t/0.2) * c * [a0*sqrt(x/c) + a1*(x/c) + ... + a4*(x/c)^4]
+ * where t = maximum thickness ratio (0.12 for NACA0012)
+ *
+ * \param x_c Chordwise position normalized by chord (x/c), range [0, 1]
+ * \return Half-thickness at position x_c
+ */
+inline double
+naca0012_thickness(const double x_c)
+{
+    if (x_c < 0.0 || x_c > 1.0) return 0.0;
+
+    const double sqrt_x_c = std::sqrt(x_c);
+    const double x_c2 = x_c * x_c;
+    const double x_c3 = x_c2 * x_c;
+    const double x_c4 = x_c3 * x_c;
+
+    // NACA 4-digit thickness distribution
+    const double y_t = (MAX_THICKNESS / 0.2) * (
+        NACA_A0 * sqrt_x_c +
+        NACA_A1 * x_c +
+        NACA_A2 * x_c2 +
+        NACA_A3 * x_c3 +
+        NACA_A4 * x_c4
+    );
+
+    return y_t * CHORD_LENGTH;  // Return dimensional thickness
+}
 
 } // namespace
 
@@ -142,11 +222,33 @@ IBNACA0012Kinematics::IBNACA0012Kinematics(const std::string& object_name,
         }
     }
 
-    // set the location of the food particle from the input file.
-    d_food_location.resizeArray(NDIM);
-    for (int dim = 0; dim < NDIM; ++dim)
+    // Set the location of the food/target particle (only needed if maneuvering with changing axis)
+    if (d_bodyIsManeuvering && d_maneuverAxisIsChangingShape)
     {
-        d_food_location[dim] = input_db->getDouble("food_location_in_domain_" + std::to_string(dim));
+        d_food_location.resizeArray(NDIM);
+        for (int dim = 0; dim < NDIM; ++dim)
+        {
+            if (input_db->keyExists("food_location_in_domain_" + std::to_string(dim)))
+            {
+                d_food_location[dim] = input_db->getDouble("food_location_in_domain_" + std::to_string(dim));
+            }
+            else
+            {
+                TBOX_WARNING("IBNACA0012Kinematics::IBNACA0012Kinematics() :\n"
+                             << "  body_is_maneuvering and maneuvering_axis_is_changing_shape are TRUE,\n"
+                             << "  but food_location_in_domain_" << dim << " not found. Using default 0.0." << std::endl);
+                d_food_location[dim] = 0.0;
+            }
+        }
+    }
+    else
+    {
+        // Not needed for non-maneuvering cases
+        d_food_location.resizeArray(NDIM);
+        for (int dim = 0; dim < NDIM; ++dim)
+        {
+            d_food_location[dim] = 0.0;
+        }
     }
 
     // set how the immersed body is layout in reference frame.
@@ -232,30 +334,37 @@ IBNACA0012Kinematics::setImmersedBodyLayout(Pointer<PatchHierarchy<NDIM> > patch
         d_mesh_width[dim] = dx[dim];
     }
 
-    // No. of points on the backbone and till head.
-    // For NACA0012: use same approach as eel but with NACA thickness distribution
-    const int BodyNx = static_cast<int>(ceil(LENGTH_FISH / d_mesh_width[0]));
-    const int HeadNx = static_cast<int>(ceil(LENGTH_HEAD / d_mesh_width[0]));
+    // Number of points along the chord (backbone)
+    // For NACA0012: discretize the chord from leading edge (x=0) to trailing edge (x=CHORD_LENGTH)
+    const int ChordNx = static_cast<int>(ceil(CHORD_LENGTH / d_mesh_width[0]));
 
     d_ImmersedBodyData.clear();
-    
-    // NOTE: For NACA0012, we use the vertex file generated by MATLAB
-    // This section builds a map for cross-sectional point counts
-    // The actual NACA thickness varies, but we approximate with eel's approach
-    for (int i = 1; i <= HeadNx; ++i)
-    {
-        const double s = (i - 1) * d_mesh_width[0];
-        const double section = sqrt(2 * WIDTH_HEAD * s - s * s);
-        const int NumPtsInSection = 2 * static_cast<int>(ceil(section / d_mesh_width[1]));
-        d_ImmersedBodyData.insert(std::make_pair(s, NumPtsInSection));
-    }
 
-    for (int i = HeadNx + 1; i <= BodyNx; ++i)
+    // Build the NACA0012 cross-sectional data using the thickness distribution
+    // At each chordwise station, we need to discretize the thickness
+    for (int i = 0; i < ChordNx; ++i)
     {
-        const double s = (i - 1) * d_mesh_width[0];
-        const double section = WIDTH_HEAD * (LENGTH_FISH - s) / (LENGTH_FISH - LENGTH_HEAD);
-        const int NumPtsInHeight = 2 * static_cast<int>(ceil(section / d_mesh_width[1]));
-        d_ImmersedBodyData.insert(std::make_pair(s, NumPtsInHeight));
+        const double x = i * d_mesh_width[0];              // Dimensional chordwise position
+        const double x_c = x / CHORD_LENGTH;                // Normalized chordwise position (x/c)
+
+        // Get NACA0012 half-thickness at this station
+        const double half_thickness = naca0012_thickness(x_c);
+
+        // Number of points needed to discretize this cross-section
+        // We need points on both upper and lower surfaces
+        int NumPtsInSection;
+        if (half_thickness > 1.0e-10)  // Avoid division by zero at leading/trailing edges
+        {
+            NumPtsInSection = 2 * static_cast<int>(ceil(half_thickness / d_mesh_width[1]));
+            // Ensure at least 2 points (one on each surface)
+            if (NumPtsInSection < 2) NumPtsInSection = 2;
+        }
+        else
+        {
+            NumPtsInSection = 2;  // Minimal points at sharp edges
+        }
+
+        d_ImmersedBodyData.insert(std::make_pair(x, NumPtsInSection));
     }
 
     // Find the coordinates of the axis of maneuvering in the reference frame from the input file.
@@ -327,9 +436,9 @@ IBNACA0012Kinematics::transformManeuverAxisAndCalculateTangents(const double ang
     d_map_transformed_tangent.clear();
     d_map_transformed_sign.clear();
 
-    const int BodyNx = static_cast<int>(ceil(LENGTH_FISH / d_mesh_width[0]));
+    const int ChordNx = static_cast<int>(ceil(CHORD_LENGTH / d_mesh_width[0]));
     std::vector<double> transformed_coord(2);
-    for (int i = 0; i <= (BodyNx - 1); ++i)
+    for (int i = 0; i < ChordNx; ++i)
     {
         transformed_coord[0] = d_maneuverAxisReferenceCoordinates_vec[i][0] * cos(angleFromHorizontal) -
                                d_maneuverAxisReferenceCoordinates_vec[i][1] * sin(angleFromHorizontal);
@@ -338,7 +447,7 @@ IBNACA0012Kinematics::transformManeuverAxisAndCalculateTangents(const double ang
         d_maneuverAxisTransformedCoordinates_vec.push_back(transformed_coord);
     }
 
-    for (int i = 0; i <= (BodyNx - 2); ++i)
+    for (int i = 0; i < (ChordNx - 1); ++i)
     {
         std::vector<int> sign_vec(2);
         const double s = i * d_mesh_width[0];
@@ -354,10 +463,13 @@ IBNACA0012Kinematics::transformManeuverAxisAndCalculateTangents(const double ang
     }
 
     // Fill in the last point in the map.
-    d_map_transformed_tangent.insert(
-        std::make_pair((BodyNx - 1) * d_mesh_width[0], (d_map_transformed_tangent.rbegin())->second));
-    d_map_transformed_sign.insert(
-        std::make_pair((BodyNx - 1) * d_mesh_width[0], (d_map_transformed_sign.rbegin())->second));
+    if (ChordNx > 0)
+    {
+        d_map_transformed_tangent.insert(
+            std::make_pair((ChordNx - 1) * d_mesh_width[0], (d_map_transformed_tangent.rbegin())->second));
+        d_map_transformed_sign.insert(
+            std::make_pair((ChordNx - 1) * d_mesh_width[0], (d_map_transformed_sign.rbegin())->second));
+    }
 
     return;
 
@@ -423,17 +535,17 @@ IBNACA0012Kinematics::setNACA0012SpecificVelocity(const double time,
                 radius_circular_path = std::abs(CUT_OFF_RADIUS * std::pow((CUT_OFF_ANGLE / angle_bw_target_vision), 1));
             }
             // set the reference maneuver axis coordinates.
-            const int BodyNx = static_cast<int>(ceil(LENGTH_FISH / d_mesh_width[0]));
+            const int ChordNx = static_cast<int>(ceil(CHORD_LENGTH / d_mesh_width[0]));
             if (radius_circular_path != __INFINITY)
             {
-                const double angle_sector = LENGTH_FISH / radius_circular_path;
-                const double dtheta = angle_sector / (BodyNx - 1);
+                const double angle_sector = CHORD_LENGTH / radius_circular_path;
+                const double dtheta = angle_sector / (ChordNx - 1);
 
                 d_maneuverAxisReferenceCoordinates_vec.clear();
                 std::vector<double> vec_axis_coord(2);
-                for (int i = 1; i <= BodyNx; ++i)
+                for (int i = 0; i < ChordNx; ++i)
                 {
-                    const double angleFromVertical = -angle_sector / 2 + (i - 1) * dtheta;
+                    const double angleFromVertical = -angle_sector / 2 + i * dtheta;
                     vec_axis_coord[0] = radius_circular_path * sin(angleFromVertical);
                     vec_axis_coord[1] = radius_circular_path * cos(angleFromVertical);
                     d_maneuverAxisReferenceCoordinates_vec.push_back(vec_axis_coord);
@@ -443,9 +555,9 @@ IBNACA0012Kinematics::setNACA0012SpecificVelocity(const double time,
             {
                 d_maneuverAxisReferenceCoordinates_vec.clear();
                 std::vector<double> vec_axis_coord(2);
-                for (int i = 1; i <= BodyNx; ++i)
+                for (int i = 0; i < ChordNx; ++i)
                 {
-                    vec_axis_coord[0] = (i - 1) * d_mesh_width[0];
+                    vec_axis_coord[0] = i * d_mesh_width[0];
                     vec_axis_coord[1] = 0.0;
                     d_maneuverAxisReferenceCoordinates_vec.push_back(vec_axis_coord);
                 }
@@ -472,7 +584,7 @@ IBNACA0012Kinematics::setNACA0012SpecificVelocity(const double time,
             // Find the tangents on this reference axis for shape update.
             d_map_reference_tangent.clear();
             d_map_reference_sign.clear();
-            for (int i = 0; i <= (BodyNx - 2); ++i)
+            for (int i = 0; i < (ChordNx - 1); ++i)
             {
                 std::vector<int> sign_vec(2);
                 const double s = i * d_mesh_width[0];
@@ -487,10 +599,13 @@ IBNACA0012Kinematics::setNACA0012SpecificVelocity(const double time,
                 d_map_reference_sign.insert(std::make_pair(s, sign_vec));
             }
             // Fill in the last point in the map.
-            d_map_reference_tangent.insert(
-                std::make_pair((BodyNx - 1) * d_mesh_width[0], (d_map_reference_tangent.rbegin())->second));
-            d_map_reference_sign.insert(
-                std::make_pair((BodyNx - 1) * d_mesh_width[0], (d_map_reference_sign.rbegin())->second));
+            if (ChordNx > 0)
+            {
+                d_map_reference_tangent.insert(
+                    std::make_pair((ChordNx - 1) * d_mesh_width[0], (d_map_reference_tangent.rbegin())->second));
+                d_map_reference_sign.insert(
+                    std::make_pair((ChordNx - 1) * d_mesh_width[0], (d_map_reference_sign.rbegin())->second));
+            }
         } // maneuverAxisIsChangingShape
 
         // Rotate the reference axis and calculate tangents in the rotated frame.
