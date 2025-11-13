@@ -352,9 +352,9 @@ Main {
 // ========================================================================
 // COMPUTATIONAL DOMAIN
 // ========================================================================
-// Domain: 8L × 4L (fish length L=1)
-// Fish centered at origin, spans x ∈ [-0.5, 0.5], y ∈ [-0.06, 0.06]
-// Provides ~3.5L upstream, ~3.5L downstream, ±2L lateral clearance
+// Domain: 16L × 8L (fish length L=1)
+// Fish centered near origin, spans x ∈ [-0.5, 0.5], y ∈ [-0.06, 0.06]
+// Provides ~10L upstream, ~6L downstream, ±4L lateral clearance
 // ========================================================================
 // Cartesian geometry and domain specification
 CartesianGeometry {
