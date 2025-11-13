@@ -13,44 +13,122 @@
 
 /////////////////////////////// OVERVIEW //////////////////////////////////////
 //
+// ==================================================================================
 // NACA0012 Foil Kinematics for Swimmer Modeling
+// ==================================================================================
 //
-// This class models undulatory swimming by using a NACA0012 airfoil profile,
-// where the chord represents the spine of a swimmer at static equilibrium.
-// The foil undergoes traveling wave deformations to simulate swimming motion.
+// GEOMETRIC MODELING APPROACH:
+// ----------------------------
+// We employ a NACA0012 airfoil profile to model the swimmers' bodies, where the
+// chord represents the spine of a swimmer at the time of their static equilibrium.
+// The symmetric thickness distribution of NACA0012 (12% thickness-to-chord ratio)
+// provides a realistic representation of streamlined aquatic organisms' body
+// cross-sections. During swimming, the chord (spine) undergoes undulatory
+// deformations while maintaining the NACA0012 thickness profile perpendicular
+// to the local spine position.
 //
-// TWO SWIMMING MODES SUPPORTED:
+// ==================================================================================
+// TWO TYPES OF WAVY KINEMATIC MODES:
+// ==================================================================================
 //
-// 1. ANGUILLIFORM (Eel-like):
-//    - Wave amplitude increases gradually from head to tail
-//    - Large amplitude undulations along entire body length
+// 1. ANGUILLIFORM MODE (Eel-like Swimming):
+//    -----------------------------------------------------------------------
+//    Biological Examples: Eels (Anguilla), lampreys, sea snakes
+//
+//    Physical Characteristics:
+//    - Wave amplitude increases gradually and continuously from head to tail
+//    - Large amplitude undulations propagate along the entire body length
+//    - Entire body participates actively in thrust generation
 //    - Wavelength typically equals or exceeds body length (λ ≥ L)
-//    - Example amplitude envelope: A(x/L) = c₀ + c₁*(x/L) + c₂*(x/L)²
-//      where coefficients increase posteriorly
-//    - Used by: eels, lampreys, snakes
+//    - More than one complete wavelength may be present along the body
 //
-// 2. CARANGIFORM (Fish-like):
-//    - Wave amplitude concentrated in posterior half of body
-//    - Anterior body remains relatively rigid
+//    Mathematical Model - Amplitude Envelope:
+//    A(x/L) = c₀ + c₁*(x/L) + c₂*(x/L)²
+//    Example coefficients: c₀ = 0.0367, c₁ = 0.0323, c₂ = 0.0310
+//
+//    Interpretation:
+//    - c₀: Baseline amplitude at head (small but non-zero for gradual onset)
+//    - c₁: Linear growth rate along body
+//    - c₂: Quadratic acceleration toward tail region
+//    - All coefficients positive → monotonically increasing amplitude
+//
+//    Swimming Performance:
+//    - High maneuverability in confined spaces
+//    - Moderate swimming efficiency
+//    - Effective for navigating complex environments
+//    - Lower maximum speed compared to carangiform
+//
+// 2. CARANGIFORM MODE (Fish-like Swimming):
+//    -----------------------------------------------------------------------
+//    Biological Examples: Tunas (Thunnus), mackerels, jacks, sailfish
+//
+//    Physical Characteristics:
+//    - Wave amplitude concentrated primarily in posterior half of body
+//    - Anterior body (head and thorax) remains relatively rigid
+//    - Posterior body and caudal peduncle provide majority of thrust
 //    - Wavelength approximately equals body length (λ ≈ L)
-//    - Example amplitude envelope (Khalid et al. 2016):
-//      A(x/L) = 0.02 - 0.0825*(x/L) + 0.1625*(x/L)²
-//      This gives small amplitude near head, increasing rapidly toward tail
-//    - Used by: tuna, mackerel, most fast-swimming fish
+//    - Typically less than one complete wavelength on the body
 //
-// KINEMATICS FORMULATION:
-//    Centerline displacement: y(x,t) = A(x/L) * cos(2π(x/λ - ft))
-//    Deformation velocity:    ∂y/∂t = A(x/L) * 2πf * sin(2π(x/λ - ft))
+//    Mathematical Model - Amplitude Envelope (Khalid et al. 2016):
+//    A(x/L) = 0.02 - 0.0825*(x/L) + 0.1625*(x/L)²
 //
-// where: x   = chordwise position along spine
-//        L   = body length (chord length)
-//        λ   = wavelength
-//        f   = swimming frequency (Hz)
-//        t   = time
-//        A(x/L) = amplitude envelope function
+//    Interpretation:
+//    - At x/L = 0 (head): A = 0.02 (very small amplitude)
+//    - Minimum amplitude occurs at x/L ≈ 0.25 (rigid anterior region)
+//    - Amplitude increases rapidly for x/L > 0.5 (flexible posterior)
+//    - At x/L = 1.0 (tail): A ≈ 0.10 (maximum amplitude, 5× head amplitude)
+//    - Negative linear term + dominant positive quadratic → characteristic
+//      posterior-concentrated motion profile
 //
-// The swimming mode is selected by choosing the appropriate amplitude
-// envelope function A(x/L) in the input file.
+//    Swimming Performance:
+//    - High cruising speed and efficiency
+//    - Streamlined for sustained fast swimming
+//    - Reduced drag from rigid anterior body
+//    - Optimized for open-water locomotion
+//
+// ==================================================================================
+// MATHEMATICAL FORMULATION OF UNDULATORY SWIMMING:
+// ==================================================================================
+//
+//    Centerline Displacement:  y(x,t) = A(x/L) * cos[2π(x/λ - ft)]
+//
+//    Deformation Velocity:     ∂y/∂t = A(x/L) * 2πf * sin[2π(x/λ - ft)]
+//
+// Parameters:
+//    x      = chordwise position along spine [0, L]
+//    L      = body length (chord length)
+//    λ      = wavelength of undulation
+//    f      = swimming frequency (Hz)
+//    t      = time (s)
+//    A(x/L) = amplitude envelope function (mode-dependent)
+//
+// Wave Propagation:
+//    Phase velocity: c_p = λf (wave travels posteriorly)
+//    Wave number:    k = 2π/λ
+//    Angular freq:   ω = 2πf
+//
+// ==================================================================================
+// IMPLEMENTATION AND USAGE:
+// ==================================================================================
+// The swimming mode is selected by choosing the appropriate amplitude envelope
+// function A(x/L) in the input2d configuration file. Users specify:
+//   - body_shape_equation: Centerline shape y(x,t)
+//   - deformation_velocity_function_0/1: Components of ∂y/∂t
+//
+// The implementation supports:
+//   - Constraint-based IB method (ConstraintIBKinematics)
+//   - Optional maneuvering along curved paths (food tracking, turning)
+//   - Adaptive mesh refinement (AMR) with IBAMR
+//   - Multiple swimming frequencies and wavelengths
+//
+// ==================================================================================
+// REFERENCES:
+// ==================================================================================
+// - Khalid, M.S.U., et al. "A bio-inspired study on tuna-mimetic soft robot with a
+//   compliant caudal fin." J. Fluids Structures, 66:19-35 (2016).
+// - Lighthill, M.J. "Note on the swimming of slender fish." J. Fluid Mech., 9(2):305 (1960).
+// - Sfakiotakis, M., et al. "Review of fish swimming modes for aquatic locomotion."
+//   IEEE J. Oceanic Eng., 24(2):237-252 (1999).
 //
 //////////////////////////// INCLUDES /////////////////////////////////////////
 #include "ibtk/IBTK_MPI.h"
