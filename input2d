@@ -141,29 +141,21 @@ naca0012carangiform {
      initial_angle_body_axis_0        = 0.0                     // initial body orientation angle (radians)
 
      // ===================================================================
-     // CARANGIFORM KINEMATICS PARAMETERS (Khalid et al., 2016)
+     // CARANGIFORM KINEMATICS (Khalid et al., 2016)
      // ===================================================================
-     // Amplitude envelope coefficients: A(x/L) = a0 + a1*(x/L) + a2*(x/L)^2
-     // Default values (from Khalid et al. 2016): a0=0.02, a1=-0.0825, a2=0.1625
-     // Uncomment to override defaults:
-     // amplitude_a0 = 0.02
-     // amplitude_a1 = -0.0825
-     // amplitude_a2 = 0.1625
-     // frequency = 1.0      // f (Hz)
-     // wavelength = 1.0     // λ (body lengths)
-
-     // Analytic equation prescribing the body centerline shape as a function of Lagrangian X_0 and time T
+     // Amplitude envelope: A(x/L) = 0.02 - 0.0825(x/L) + 0.1625(x/L)^2
      // Centerline position: y(x,t) = A(x/L) * cos[2π(x/L - ft)]
      // where: X_0 = x/L (material coordinate, 0 to 1)
      //        T = t (time)
-     //        a0, a1, a2 = amplitude envelope coefficients
-     //        frequency = undulation frequency
-     body_shape_equation = "(a0 + a1*X_0 + a2*X_0^2) * cos(2*PI*X_0 - 2*PI*frequency*T)"
+     //        f = 1 Hz (frequency)
+     //        λ = L = 1 (wavelength equals body length)
+     // ===================================================================
+     body_shape_equation = "(0.02 - 0.0825*X_0 + 0.1625*X_0^2) * cos(2*PI*X_0 - 2*PI*T)"
 
      // Deformation velocity: ∂y/∂t = A(x/L) * 2πf * sin[2π(x/L - ft)]
      // Projected onto local normal direction (N_0, N_1)
-     deformation_velocity_function_0  = "((a0 + a1*X_0 + a2*X_0^2) * 2*PI*frequency * sin(2*PI*X_0 - 2*PI*frequency*T)) * N_0"
-     deformation_velocity_function_1  = "((a0 + a1*X_0 + a2*X_0^2) * 2*PI*frequency * sin(2*PI*X_0 - 2*PI*frequency*T)) * N_1"
+     deformation_velocity_function_0  = "((0.02 - 0.0825*X_0 + 0.1625*X_0^2) * 2*PI * sin(2*PI*X_0 - 2*PI*T)) * N_0"
+     deformation_velocity_function_1  = "((0.02 - 0.0825*X_0 + 0.1625*X_0^2) * 2*PI * sin(2*PI*X_0 - 2*PI*T)) * N_1"
      // whether the body executes additional maneuvering motion
      body_is_maneuvering                 = FALSE       //default false. If FALSE then nothing below has any effect.
      // equation defining the maneuver axis (used if body_is_maneuvering is TRUE)

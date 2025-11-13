@@ -249,15 +249,6 @@ private:
      */
     SAMRAI::tbox::Array<double> d_food_location;
 
-    /*!
-     * NACA0012 Carangiform swimming parameters
-     * Amplitude envelope coefficients: A(x/L) = a0 + a1*(x/L) + a2*(x/L)^2
-     * Reference: Khalid et al. (2016), J. Fluids Structures 66:19-35
-     */
-    double d_a0, d_a1, d_a2;           // Amplitude envelope coefficients
-    double d_wavelength;                // Wavelength λ (typically equals body length L)
-    double d_frequency;                 // Undulation frequency f (Hz)
-
 }; // IBNACA0012Kinematics
 
 } // namespace IBAMR
