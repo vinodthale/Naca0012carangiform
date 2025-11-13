@@ -39,33 +39,106 @@ namespace IBAMR
  * \brief IBNACA0012Kinematics is a concrete class which calculates the deformation velocity and updated shape
  * for a NACA0012 airfoil representing a swimmer's body.
  *
- * GEOMETRY:
- * The NACA0012 airfoil profile represents the swimmer's body cross-section, where the chord
- * represents the spine at static equilibrium. The foil undergoes undulatory motion via
- * traveling waves.
+ * ==================================================================================
+ * GEOMETRIC MODELING:
+ * ==================================================================================
+ * We employ a NACA0012 airfoil profile to model the swimmers' bodies, where the chord
+ * represents the spine of a swimmer at the time of their static equilibrium. The symmetric
+ * thickness distribution of NACA0012 provides a realistic representation of the body
+ * cross-section, while the chord line serves as the centerline/spine that undergoes
+ * undulatory deformation during swimming.
  *
+ * NACA0012 Thickness Distribution:
+ *    y_t(x) = (t/0.2) * [0.2969√(x/c) - 0.1260(x/c) - 0.3516(x/c)² + 0.2843(x/c)³ - 0.1015(x/c)⁴]
+ *    where t = 0.12 (12% thickness), c = chord length = body length L
+ *
+ * ==================================================================================
  * SWIMMING MODES:
- * Two swimming kinematics modes are supported (selected via amplitude envelope function):
+ * ==================================================================================
+ * Two types of wavy kinematic modes are considered to model different swimming strategies:
  *
- * 1. ANGUILLIFORM (Eel-like):
- *    - Wave amplitude increases gradually from head to tail
- *    - Large undulations along entire body
- *    - Wavelength λ ≥ L (body length)
- *    - Example: A(x/L) = c₀ + c₁*(x/L) + c₂*(x/L)² with increasing coefficients
+ * 1. ANGUILLIFORM (Eel-like Swimming):
+ *    --------------------------------------------------------------------------
+ *    Biological Examples: Eels, lampreys, sea snakes
  *
- * 2. CARANGIFORM (Fish-like, default):
- *    - Wave amplitude concentrated in posterior half
- *    - Rigid anterior, flexible posterior
- *    - Wavelength λ ≈ L
- *    - Example (Khalid et al. 2016): A(x/L) = 0.02 - 0.0825*(x/L) + 0.1625*(x/L)²
+ *    Characteristics:
+ *    - Wave amplitude increases gradually and continuously from head to tail
+ *    - Large amplitude undulations propagate along the entire body length
+ *    - Wavelength typically equals or exceeds body length (λ ≥ L)
+ *    - Entire body participates in thrust generation
+ *    - More than one complete wavelength may be present on the body
  *
- * KINEMATICS:
- *    Centerline:  y(x,t) = A(x/L) * cos[2π(x/L - ft)]
- *    Velocity:    ∂y/∂t  = A(x/L) * 2πf * sin[2π(x/L - ft)]
+ *    Amplitude Envelope:
+ *    A(x/L) = c₀ + c₁*(x/L) + c₂*(x/L)²
+ *    where coefficients increase posteriorly (e.g., c₀=0.0367, c₁=0.0323, c₂=0.0310)
  *
+ *    Physical Interpretation:
+ *    - c₀: baseline amplitude at head (small but non-zero)
+ *    - c₁: linear growth rate
+ *    - c₂: quadratic acceleration toward tail
+ *
+ *    Performance: High maneuverability, moderate efficiency, effective in confined spaces
+ *
+ * 2. CARANGIFORM (Fish-like Swimming):
+ *    --------------------------------------------------------------------------
+ *    Biological Examples: Tunas, mackerels, jacks, most fast-swimming teleost fish
+ *
+ *    Characteristics:
+ *    - Wave amplitude concentrated primarily in posterior half of body
+ *    - Anterior body (head region) remains relatively rigid
+ *    - Posterior body and caudal fin provide majority of thrust
+ *    - Wavelength approximately equals body length (λ ≈ L)
+ *    - Typically less than one complete wavelength on the body
+ *
+ *    Amplitude Envelope (Khalid et al. 2016):
+ *    A(x/L) = 0.02 - 0.0825*(x/L) + 0.1625*(x/L)²
+ *
+ *    Physical Interpretation:
+ *    - Minimum amplitude at x/L ≈ 0.25 (anterior rigid body region)
+ *    - Rapid amplitude increase in posterior half (x/L > 0.5)
+ *    - Maximum amplitude at tail (x/L = 1.0)
+ *    - The quadratic coefficient (0.1625) dominates, creating the characteristic
+ *      posterior-concentrated motion
+ *
+ *    Performance: High swimming speed, high efficiency, streamlined for cruising
+ *
+ * ==================================================================================
+ * MATHEMATICAL FORMULATION:
+ * ==================================================================================
+ * The undulatory swimming kinematics are modeled using a traveling wave formulation:
+ *
+ *    Centerline Displacement:  y(x,t) = A(x/L) * cos[2π(x/λ - ft)]
+ *
+ *    Deformation Velocity:     ∂y/∂t = A(x/L) * 2πf * sin[2π(x/λ - ft)]
+ *
+ * where:
+ *    x   = chordwise position along spine [0, L]
+ *    L   = body length (chord length)
+ *    λ   = wavelength of undulation
+ *    f   = swimming frequency (Hz)
+ *    t   = time (s)
+ *    A(x/L) = amplitude envelope function (mode-dependent)
+ *
+ * The wave travels posteriorly with phase velocity c_p = λf, and the
+ * deformation velocity is normal to the local body surface.
+ *
+ * ==================================================================================
+ * IMPLEMENTATION DETAILS:
+ * ==================================================================================
+ * - Swimming mode is selected by choosing appropriate amplitude envelope A(x/L) in input file
+ * - Deformation velocities computed using mu::Parser for flexible function definitions
+ * - Supports optional maneuvering (curved swimming paths for food tracking/turning)
+ * - Compatible with IBAMR's Constraint IB method for fluid-structure interaction
+ *
+ * ==================================================================================
  * REFERENCES:
- * - Khalid et al. "A bio-inspired study on tuna-mimetic soft robot with a compliant caudal fin."
- *   J Fluids Structures, 66:19-35 (2016).
+ * ==================================================================================
+ * - Khalid, M.S.U., et al. "A bio-inspired study on tuna-mimetic soft robot with a
+ *   compliant caudal fin." Journal of Fluids and Structures, 66:19-35 (2016).
+ * - Lighthill, M.J. "Note on the swimming of slender fish." Journal of Fluid
+ *   Mechanics, 9(2):305-317 (1960).
+ * - Sfakiotakis, M., et al. "Review of fish swimming modes for aquatic locomotion."
+ *   IEEE Journal of Oceanic Engineering, 24(2):237-252 (1999).
  */
 
 class IBNACA0012Kinematics : public ConstraintIBKinematics
