@@ -67,40 +67,12 @@ IBNACA0012Kinematics::IBNACA0012Kinematics(const std::string& object_name,
       d_incremented_angle_from_reference_axis(3),
       d_tagged_pt_position(3),
       d_mesh_width(NDIM),
-      d_parser_time(0.0),
-      d_a0(0.02),           // Default carangiform coefficients (Khalid et al., 2016)
-      d_a1(-0.0825),
-      d_a2(0.1625),
-      d_wavelength(1.0),    // λ = L (wavelength equals body length)
-      d_frequency(1.0)      // f = 1 Hz
+      d_parser_time(0.0)
 {
     // Read from inputdb
     d_initAngle_bodyAxis_x = input_db->getDoubleWithDefault("initial_angle_body_axis_0", 0.0);
     d_bodyIsManeuvering = input_db->getBoolWithDefault("body_is_maneuvering", false);
     d_maneuverAxisIsChangingShape = input_db->getBoolWithDefault("maneuvering_axis_is_changing_shape", false);
-
-    // Read NACA0012 carangiform swimming parameters (optional, can be hardcoded in equations)
-    if (input_db->keyExists("amplitude_a0")) d_a0 = input_db->getDouble("amplitude_a0");
-    if (input_db->keyExists("amplitude_a1")) d_a1 = input_db->getDouble("amplitude_a1");
-    if (input_db->keyExists("amplitude_a2")) d_a2 = input_db->getDouble("amplitude_a2");
-    if (input_db->keyExists("wavelength")) d_wavelength = input_db->getDouble("wavelength");
-    if (input_db->keyExists("frequency")) d_frequency = input_db->getDouble("frequency");
-
-    // Print NACA0012 carangiform parameters
-    pout << "\n";
-    pout << "========================================================================\n";
-    pout << "NACA0012 Carangiform Swimming Parameters:\n";
-    pout << "========================================================================\n";
-    pout << "  Amplitude envelope: A(x/L) = " << d_a0 << " + (" << d_a1 << ")*(x/L) + " 
-         << d_a2 << "*(x/L)^2\n";
-    pout << "  Wavelength λ = " << d_wavelength << " (body lengths)\n";
-    pout << "  Frequency f = " << d_frequency << " Hz\n";
-    pout << "  A(0)   = " << d_a0 << " (head amplitude)\n";
-    pout << "  A(0.5) = " << (d_a0 + d_a1*0.5 + d_a2*0.25) << " (mid-body)\n";
-    pout << "  A(1)   = " << (d_a0 + d_a1 + d_a2) << " (tail amplitude)\n";
-    pout << "  Reference: Khalid et al. (2016), J. Fluids Structures 66:19-35\n";
-    pout << "========================================================================\n";
-    pout << "\n";
 
     // Read-in deformation velocity functions
     std::vector<std::string> deformationvel_function_strings;

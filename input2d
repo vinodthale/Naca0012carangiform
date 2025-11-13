@@ -139,20 +139,21 @@ naca0012carangiform {
      // identifier for a tagged Lagrangian point (level, relative index)
      tagged_pt_identifier             = MAX_LEVELS - 1, 0  // level, relative idx of lag point
      initial_angle_body_axis_0        = 0.0                     // initial body orientation angle (radians)
-     // analytic equation prescribing the body centerline shape as a function of Lagrangian X_0 and time T
-      // ===================================================================
-      // CARANGIFORM KINEMATICS (Khalid et al., 2016)
-      // ===================================================================
-      // Amplitude envelope: A(x/L) = 0.02 - 0.0825(x/L) + 0.1625(x/L)^2
-      // Centerline position: y(x,t) = A(x/L) * cos[2π(x/L - ft)]
-      // where: X_0 = x/L (material coordinate, 0 to 1)
-      //        T = t (time)
-      //        f = 1 Hz (frequency)
-      //        λ = L = 1 (wavelength equals body length)
-      // ===================================================================
+
+     // ===================================================================
+     // CARANGIFORM KINEMATICS (Khalid et al., 2016)
+     // ===================================================================
+     // Amplitude envelope: A(x/L) = 0.02 - 0.0825(x/L) + 0.1625(x/L)^2
+     // Centerline position: y(x,t) = A(x/L) * cos[2π(x/L - ft)]
+     // where: X_0 = x/L (material coordinate, 0 to 1)
+     //        T = t (time)
+     //        f = 1 Hz (frequency)
+     //        λ = L = 1 (wavelength equals body length)
+     // ===================================================================
      body_shape_equation = "(0.02 - 0.0825*X_0 + 0.1625*X_0^2) * cos(2*PI*X_0 - 2*PI*T)"
-      // Deformation velocity: ∂y/∂t = A(x/L) * 2πf * sin[2π(x/L - ft)]
-      // Projected onto local normal direction (N_0, N_1)
+
+     // Deformation velocity: ∂y/∂t = A(x/L) * 2πf * sin[2π(x/L - ft)]
+     // Projected onto local normal direction (N_0, N_1)
      deformation_velocity_function_0  = "((0.02 - 0.0825*X_0 + 0.1625*X_0^2) * 2*PI * sin(2*PI*X_0 - 2*PI*T)) * N_0"
      deformation_velocity_function_1  = "((0.02 - 0.0825*X_0 + 0.1625*X_0^2) * 2*PI * sin(2*PI*X_0 - 2*PI*T)) * N_1"
      // whether the body executes additional maneuvering motion
