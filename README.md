@@ -78,10 +78,34 @@ Naca0012carangiform/
 ├── IBNACA0012Kinematics.h             # Header file
 ├── example.cpp                        # Main simulation driver
 ├── CMakeLists.txt                     # Build configuration
-└── README.md                          # This file
+├── README.md                          # This file
+├── INSTALL.md                         # Installation instructions
+├── CONTRIBUTING.md                    # Contribution guidelines
+├── CODE_OF_CONDUCT.md                 # Community code of conduct
+├── LICENSE                            # BSD 3-Clause license
+├── CITATION.cff                       # Citation information
+└── .github/                           # GitHub templates and workflows
+    ├── workflows/c-cpp.yml            # CI/CD workflow
+    ├── ISSUE_TEMPLATE/                # Issue templates
+    └── PULL_REQUEST_TEMPLATE.md       # PR template
 ```
 
+## Documentation
+
+- **[INSTALL.md](INSTALL.md)** - Detailed installation instructions for IBAMR and dependencies
+- **[CONTRIBUTING.md](CONTRIBUTING.md)** - Guidelines for contributing to the project
+- **[MESH_PARAMETER_GUIDE.md](MESH_PARAMETER_GUIDE.md)** - Guide to mesh generation parameters
+- **[FORMATTING_GUIDE.md](FORMATTING_GUIDE.md)** - Code formatting guidelines
+- **[CODE_OF_CONDUCT.md](CODE_OF_CONDUCT.md)** - Community guidelines
+
 ## Quick Start
+
+### Prerequisites
+
+Before starting, ensure you have:
+- IBAMR installed (see [INSTALL.md](INSTALL.md) for detailed instructions)
+- MATLAB or GNU Octave for mesh generation
+- MPI for parallel execution
 
 ### Method 1: Unified Generator (Recommended)
 
@@ -250,15 +274,44 @@ where `t_max = 0.12 × 0.2489 ≈ 0.0299` (scaled for point density)
 - **Recommended processors:** 4-16 MPI ranks
 - **Output size:** ~5-10 GB for full simulation
 
+## Contributing
+
+Contributions are welcome! Please see [CONTRIBUTING.md](CONTRIBUTING.md) for guidelines on:
+- Reporting bugs
+- Suggesting enhancements
+- Submitting pull requests
+- Coding standards
+
+Please read our [Code of Conduct](CODE_OF_CONDUCT.md) before contributing.
+
 ## License
 
-This code is distributed under the 3-clause BSD license. See COPYRIGHT file in IBAMR root directory.
+This code is distributed under the 3-clause BSD license. See [LICENSE](LICENSE) file for details.
 
-## Contact & Citation
+This project uses IBAMR, which is separately licensed under the BSD 3-Clause License.
 
-If you use this code, please cite:
+## Citation
+
+If you use this code in your research, please cite it using the information in [CITATION.cff](CITATION.cff), or cite:
+
+**This software:**
+```bibtex
+@software{naca0012_swimming,
+  author = {Thale, Vinod},
+  title = {NACA0012 Undulatory Swimming Simulation},
+  url = {https://github.com/vinodthale/Naca0012carangiform},
+  license = {BSD-3-Clause}
+}
+```
+
+**Key references:**
 - IBAMR: https://github.com/IBAMR/IBAMR
-- Khalid et al. (2020) for carangiform kinematics
-- Your own work as appropriate
+- Khalid, M.S.U., et al. (2020). "Flow transitions and mapping for undulating swimmers." *Physical Review Fluids*, 5(6):063104. [DOI](https://doi.org/10.1103/PhysRevFluids.5.063104)
 
-For questions or issues, please open an issue in the repository.
+## Support
+
+For questions or issues:
+- Check the [documentation](#documentation) first
+- Review [existing issues](https://github.com/vinodthale/Naca0012carangiform/issues)
+- Open a new issue using the appropriate template
+- See [INSTALL.md](INSTALL.md) for troubleshooting tips

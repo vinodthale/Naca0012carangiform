@@ -1,19 +1,35 @@
 # Compiled binaries
 main2d
 test_naca0012
+example
+*.exe
+*.out
+a.out
 
 # Build directories
 build/
 cmake-build-*/
+Build/
+install/
 
 # Object files
 *.o
 *.obj
+*.a
+*.so
+*.dylib
+*.lib
+*.dll
 
 # CMake generated files
 CMakeCache.txt
 CMakeFiles/
 cmake_install.cmake
+Makefile
+*.cmake
+!CMakeLists.txt
+CTestTestfile.cmake
+compile_commands.json
 
 # IDE files
 .vscode/
@@ -21,12 +37,67 @@ cmake_install.cmake
 *.swp
 *.swo
 *~
+.DS_Store
+*.sublime-*
+.project
+.cproject
+.settings/
 
 # Output directories
 viz_*/
 restart_*/
 hier_data_*/
 NACA0012CarangiformData/
+NACA0012Str/
+*Str/
+dumps.visit
+*.visit
+
+# IBAMR output files
+*.curve
+*.spring
+*.vertex.bak
+*.summary
+timer_*.txt
 
 # Log files
 *.log
+*.err
+*.out
+slurm-*.out
+
+# MATLAB temporary files
+*.m~
+*.asv
+
+# Python cache
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Backup files
+*~
+*.bak
+*.backup
+*.tmp
+*.temp
+
+# Core dumps and debugging
+core.*
+vgcore.*
+*.dSYM/
+
+# LaTeX temporary files
+*.aux
+*.bbl
+*.blg
+*.fdb_latexmk
+*.fls
+*.synctex.gz
+*.toc
+
+# Data files (uncomment if needed)
+# *.dat
+# *.csv
+# *.h5
+# *.xmf
