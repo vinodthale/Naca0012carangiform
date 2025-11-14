@@ -1,0 +1,129 @@
+# IBAMR-Compatible Clang-Format Configuration
+# Based on IBAMR coding standards and observed patterns in the codebase
+#
+# This configuration file matches the coding style used in IBAMR:
+# - 4-space indentation
+# - Braces on same line for functions
+# - CamelCase for classes, camelCase for functions
+# - Consistent spacing and alignment
+#
+# To format code: clang-format -i -style=file <filename>
+
+---
+Language: Cpp
+BasedOnStyle: LLVM
+
+# Indentation
+IndentWidth: 4
+TabWidth: 4
+UseTab: Never
+ContinuationIndentWidth: 4
+
+# Line length
+ColumnLimit: 120
+
+# Braces
+BreakBeforeBraces: Custom
+BraceWrapping:
+  AfterClass: false
+  AfterControlStatement: false
+  AfterEnum: false
+  AfterFunction: false
+  AfterNamespace: false
+  AfterStruct: false
+  AfterUnion: false
+  BeforeCatch: false
+  BeforeElse: false
+  IndentBraces: false
+  SplitEmptyFunction: false
+  SplitEmptyRecord: false
+
+# Spacing
+SpaceAfterCStyleCast: false
+SpaceAfterTemplateKeyword: true
+SpaceBeforeAssignmentOperators: true
+SpaceBeforeCpp11BracedList: false
+SpaceBeforeCtorInitializerColon: true
+SpaceBeforeInheritanceColon: true
+SpaceBeforeParens: ControlStatements
+SpaceBeforeRangeBasedForLoopColon: true
+SpaceInEmptyParentheses: false
+SpacesBeforeTrailingComments: 2
+SpacesInAngles: false
+SpacesInContainerLiterals: false
+SpacesInCStyleCastParentheses: false
+SpacesInParentheses: false
+SpacesInSquareBrackets: false
+
+# Alignment
+AlignAfterOpenBracket: Align
+AlignConsecutiveAssignments: false
+AlignConsecutiveDeclarations: false
+AlignEscapedNewlines: Right
+AlignOperands: true
+AlignTrailingComments: true
+
+# Pointer and reference alignment
+PointerAlignment: Left
+DerivePointerAlignment: false
+
+# Include organization
+SortIncludes: false  # Keep manual include order for IBAMR conventions
+
+# Function parameters
+AllowAllParametersOfDeclarationOnNextLine: true
+BinPackParameters: true
+BinPackArguments: true
+
+# Breaking
+AllowShortBlocksOnASingleLine: false
+AllowShortCaseLabelsOnASingleLine: false
+AllowShortFunctionsOnASingleLine: Inline
+AllowShortIfStatementsOnASingleLine: false
+AllowShortLoopsOnASingleLine: false
+AlwaysBreakAfterReturnType: None
+AlwaysBreakBeforeMultilineStrings: false
+AlwaysBreakTemplateDeclarations: Yes
+BreakBeforeBinaryOperators: None
+BreakBeforeTernaryOperators: true
+BreakConstructorInitializers: BeforeColon
+BreakInheritanceList: BeforeColon
+
+# Namespace
+CompactNamespaces: false
+FixNamespaceComments: true
+NamespaceIndentation: None
+
+# Constructor initialization
+ConstructorInitializerIndentWidth: 4
+ConstructorInitializerAllOnOneLineOrOnePerLine: false
+
+# Empty lines
+KeepEmptyLinesAtTheStartOfBlocks: false
+MaxEmptyLinesToKeep: 2
+
+# Access modifiers
+AccessModifierOffset: -4
+
+# Comments
+ReflowComments: false  # Preserve carefully formatted scientific comments
+
+# Penalties (fine-tuning line breaking decisions)
+PenaltyBreakAssignment: 100
+PenaltyBreakBeforeFirstCallParameter: 50
+PenaltyBreakComment: 300
+PenaltyBreakFirstLessLess: 120
+PenaltyBreakString: 1000
+PenaltyExcessCharacter: 1000000
+PenaltyReturnTypeOnItsOwnLine: 200
+
+# C++11 and beyond
+Cpp11BracedListStyle: true
+Standard: Cpp11
+
+# Other
+DeriveLineEnding: false
+UseCRLF: false
+IndentCaseLabels: true
+IndentPPDirectives: None
+...
