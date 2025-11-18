@@ -70,82 +70,143 @@ y(x,t) = A(x/L) × cos[2π(x/λ - ft)]
 
 ```
 Naca0012carangiform/
-├── naca0012_swimmer_generator.m      # Unified mesh generator (RECOMMENDED)
-├── naca_anguilliform.m                # Anguilliform-specific generator
-├── naca_carangiform_clean.m           # Carangiform-specific generator
-├── input2d                            # IBAMR input configuration
-├── IBNACA0012Kinematics.cpp           # C++ kinematics implementation
-├── IBNACA0012Kinematics.h             # Header file
-├── example.cpp                        # Main simulation driver
-├── CMakeLists.txt                     # Build configuration
+├── CMakeLists.txt                     # Build configuration (IBAMR-compatible)
 ├── README.md                          # This file
-├── INSTALL.md                         # Installation instructions
-├── CONTRIBUTING.md                    # Contribution guidelines
-├── CODE_OF_CONDUCT.md                 # Community code of conduct
 ├── LICENSE                            # BSD 3-Clause license
 ├── CITATION.cff                       # Citation information
-└── .github/                           # GitHub templates and workflows
+│
+├── src/                               # Source code
+│   ├── IBNACA0012Kinematics.h         # Kinematics class header
+│   ├── IBNACA0012Kinematics.cpp       # Kinematics implementation
+│   └── main.cpp                       # Main simulation driver
+│
+├── input/                             # Input configuration files
+│   └── input2d                        # IBAMR input parameters
+│
+├── mesh/                              # Mesh generation and vertex files
+│   ├── naca0012carangiform.vertex     # Lagrangian mesh (2938 points)
+│   ├── naca0012_swimmer_generator.m   # Unified mesh generator (RECOMMENDED)
+│   ├── naca_anguilliform.m            # Anguilliform-specific generator
+│   ├── naca_carangiform_clean.m       # Carangiform-specific generator
+│   └── verify_mesh_resolution.m       # Mesh validation tool
+│
+├── scripts/                           # Utility scripts
+│   └── run_simulation.sh              # Simulation runner with proper paths
+│
+├── tests/                             # Test files
+│   └── test_naca0012.cpp              # Unit tests
+│
+├── docs/                              # Documentation and guides
+│   ├── INSTALL.md                     # Installation instructions
+│   ├── CONTRIBUTING.md                # Contribution guidelines
+│   ├── MESH_PARAMETER_GUIDE.md        # Mesh generation guide
+│   ├── FORMATTING_GUIDE.md            # Code formatting guidelines
+│   ├── CODE_OF_CONDUCT.md             # Community code of conduct
+│   ├── How to Run.txt                 # Quick start guide
+│   ├── COMPREHENSIVE_IBAMR_COMPLIANCE_REPORT.md
+│   ├── IBAMR_STYLE_COMPLIANCE_REPORT.md
+│   ├── amplitude_envelope.png         # Visualization: amplitude profiles
+│   ├── backbone_motion.png            # Visualization: swimming motion
+│   └── mesh_visualization.png         # Visualization: mesh structure
+│
+└── .github/                           # GitHub configuration
     ├── workflows/c-cpp.yml            # CI/CD workflow
-    ├── ISSUE_TEMPLATE/                # Issue templates
-    └── PULL_REQUEST_TEMPLATE.md       # PR template
+    └── ISSUE_TEMPLATE/                # Issue templates
 ```
-
-## Documentation
-
-- **[INSTALL.md](INSTALL.md)** - Detailed installation instructions for IBAMR and dependencies
-- **[CONTRIBUTING.md](CONTRIBUTING.md)** - Guidelines for contributing to the project
-- **[MESH_PARAMETER_GUIDE.md](MESH_PARAMETER_GUIDE.md)** - Guide to mesh generation parameters
-- **[FORMATTING_GUIDE.md](FORMATTING_GUIDE.md)** - Code formatting guidelines
-- **[CODE_OF_CONDUCT.md](CODE_OF_CONDUCT.md)** - Community guidelines
 
 ## Quick Start
 
-### Prerequisites
+### 1. Build the Project
+
+```bash
+# Create build directory
+mkdir build && cd build
+
+# Configure with CMake
+cmake .. -DCMAKE_PREFIX_PATH=/path/to/ibamr/install
+
+# Build
+make
+
+# Return to project root
+cd ..
+```
+
+### 2. Run Simulation
+
+```bash
+# Option 1: Use the provided script (recommended)
+./scripts/run_simulation.sh
+
+# Option 2: Run directly
+mpirun -np 6 ./build/main2d input/input2d
+```
+
+**Note:** IBAMR looks for `.vertex` files in the current directory. The run script automatically creates a symbolic link from `mesh/naca0012carangiform.vertex` to the root directory.
+
+## Documentation
+
+- **[docs/INSTALL.md](docs/INSTALL.md)** - Detailed installation instructions for IBAMR and dependencies
+- **[docs/CONTRIBUTING.md](docs/CONTRIBUTING.md)** - Guidelines for contributing to the project
+- **[docs/MESH_PARAMETER_GUIDE.md](docs/MESH_PARAMETER_GUIDE.md)** - Guide to mesh generation parameters
+- **[docs/FORMATTING_GUIDE.md](docs/FORMATTING_GUIDE.md)** - Code formatting guidelines
+- **[docs/CODE_OF_CONDUCT.md](docs/CODE_OF_CONDUCT.md)** - Community guidelines
+- **[docs/How to Run.txt](docs/How%20to%20Run.txt)** - Quick start guide
+
+## Prerequisites
 
 Before starting, ensure you have:
-- IBAMR installed (see [INSTALL.md](INSTALL.md) for detailed instructions)
-- MATLAB or GNU Octave for mesh generation
+- IBAMR installed (see [docs/INSTALL.md](docs/INSTALL.md) for detailed instructions)
+- MATLAB or GNU Octave for mesh generation (optional - pre-generated mesh included)
 - MPI for parallel execution
+
+## Mesh Generation (Optional)
+
+A pre-generated mesh file is included in `mesh/naca0012carangiform.vertex`. If you want to regenerate or customize the mesh:
 
 ### Method 1: Unified Generator (Recommended)
 
-1. **Open** `naca0012_swimmer_generator.m`
-2. **Set swimming mode** (line 20):
+1. **Navigate** to mesh directory: `cd mesh/`
+2. **Open** `naca0012_swimmer_generator.m`
+3. **Set swimming mode** (line 20):
    ```matlab
    swimming_mode = 'carangiform';  % or 'anguilliform'
    ```
-3. **Run** the script in MATLAB
-4. **Outputs:**
+4. **Run** the script in MATLAB
+5. **Outputs:**
    - `naca0012[mode].vertex` - Mesh file for IBAMR
    - Visualization plots (amplitude envelope, backbone motion, mesh)
 
 ### Method 2: Mode-Specific Generators
 
 **For carangiform:**
-```matlab
-run naca_carangiform_clean.m
+```bash
+cd mesh/
+matlab -batch "run('naca_carangiform_clean.m')"
 ```
 
 **For anguilliform:**
-```matlab
-run naca_anguilliform.m
-```
-
-## IBAMR Simulation Setup
-
-### Step 1: Generate Mesh
 ```bash
-cd /path/to/Naca0012carangiform
-matlab -batch "swimming_mode='carangiform'; run('naca0012_swimmer_generator.m')"
+cd mesh/
+matlab -batch "run('naca_anguilliform.m')"
 ```
 
-### Step 2: Configure input2d
+## Simulation Configuration
 
-Edit `input2d` file:
+### Configure Swimming Mode
 
-**A. Update structure name (line 149, 237):**
+Edit `input/input2d` file to select swimming mode:
+
+**Update amplitude envelope equations (lines 198-202):**
+
+**For Carangiform:**
 ```
-structure_names = "naca0012carangiform"  # or "naca0012anguilliform"
+body_shape_equation = "(0.02 - 0.0825*X_0 + 0.1625*X_0^2) * cos(2*PI*X_0 - 2*PI*T)"
+```
+
+**For Anguilliform:**
+```
+body_shape_equation = "(0.0367 + 0.0323*X_0 + 0.0310*X_0^2) * cos(2*PI*X_0 - 2*PI*T)"
 ```
 
 **B. Set kinematics equations (lines 198-202 or 215-218):**
